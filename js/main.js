@@ -2,12 +2,8 @@
 let scrollAmount = 0;
 let isScrolling = false;
 
-document.addEventListener('wheel', function(event) {
-    // Empêche le défilement vertical par défaut
+document.addEventListener('wheel', function (event) {
     event.preventDefault();
-    
-    
-    // Utilise deltaY de la souris pour un défilement horizontal
     if (event.deltaY !== 0) {
         scrollAmount += event.deltaY;
         if (!isScrolling) {
@@ -15,17 +11,16 @@ document.addEventListener('wheel', function(event) {
             smoothHorizontalScroll();
         }
     }
-}, { passive: false }); // Important pour permettre preventDefault
+}, { passive: false });
 
 function smoothHorizontalScroll() {
     if (Math.abs(scrollAmount) > 0.5) {
-        // Utiliser scrollBy avec les paramètres left pour un défilement horizontal
         window.scrollBy({
-            top: 0, // Pas de défilement vertical
+            top: 0,
             left: scrollAmount / 10,
             behavior: 'auto'
         });
-        scrollAmount *= 0.9; // Réduction progressive
+        scrollAmount *= 0.9;
         requestAnimationFrame(smoothHorizontalScroll);
     } else {
         scrollAmount = 0;
@@ -33,127 +28,170 @@ function smoothHorizontalScroll() {
     }
 }
 
-// Tooltip pour l'icône de téléphone
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialisation de GSAP et ScrollTrigger
+    gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+    // Initialisation des carousels
+    initCarousel('.section.Blender .carousel');
+    initCarousel('.game-carousel');
+
+    // Fonction unique pour initialiser un carousel avec GSAP et boucle infinie
+    function initCarousel(carouselSelector) {
+        const carousel = document.querySelector(carouselSelector);
+        if (!carousel) return;
+
+        const carouselInner = carousel.querySelector('.carousel-inner') || carousel.querySelector('.game-carousel-inner');
+        if (!carouselInner) return;
+
+        // IMPORTANT: Supprimer la transition CSS pour éviter les conflits
+        carouselInner.style.transition = 'none';
+
+        const items = Array.from(carouselInner.querySelectorAll('.carousel-item'));
+        const prevControl = carousel.querySelector('[class*="carousel-control-prev"]');
+        const nextControl = carousel.querySelector('[class*="carousel-control-next"]');
+
+        const totalItems = items.length;
+        if (totalItems === 0) return;
+
+        // Cloner les éléments pour la boucle infinie
+        items.forEach(item => {
+            const clone = item.cloneNode(true);
+            clone.classList.add('clone');
+            carouselInner.appendChild(clone);
+        });
+
+        // Aussi cloner au début pour aller en arrière
+        items.slice().reverse().forEach(item => {
+            const clone = item.cloneNode(true);
+            clone.classList.add('clone');
+            carouselInner.insertBefore(clone, carouselInner.firstChild);
+        });
+
+        let currentIndex = totalItems; // Commence au milieu (après les clones du début)
+        let isAnimating = false;
+        const animDuration = 0.4;
+
+        // Position initiale (sans animation)
+        gsap.set(carouselInner, { x: `${-currentIndex * 100}%` });
+
+        function updateClasses() {
+            const allItems = carouselInner.querySelectorAll('.carousel-item');
+            allItems.forEach((item, i) => {
+                item.classList.remove('active', 'prev', 'next');
+                if (i === currentIndex) {
+                    item.classList.add('active');
+                } else if (i === currentIndex - 1) {
+                    item.classList.add('prev');
+                } else if (i === currentIndex + 1) {
+                    item.classList.add('next');
+                }
+            });
+        }
+
+        function goTo(index) {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            // Kill toute animation en cours pour éviter les conflits
+            gsap.killTweensOf(carouselInner);
+
+            currentIndex = index;
+            const offset = -currentIndex * 100;
+
+            gsap.to(carouselInner, {
+                x: `${offset}%`,
+                duration: animDuration,
+                ease: "none",
+                onUpdate: updateClasses,
+                onComplete: () => {
+                    // Saut invisible pour boucle infinie
+                    if (currentIndex >= totalItems * 2) {
+                        currentIndex = totalItems;
+                        gsap.set(carouselInner, { x: `${-currentIndex * 100}%` });
+                    } else if (currentIndex < totalItems) {
+                        currentIndex = totalItems * 2 - 1;
+                        gsap.set(carouselInner, { x: `${-currentIndex * 100}%` });
+                    }
+                    updateClasses();
+
+                    // Petit délai supplémentaire avant de permettre le prochain clic
+                    setTimeout(() => {
+                        isAnimating = false;
+                    }, 50);
+                }
+            });
+        }
+
+        function goNext() {
+            goTo(currentIndex + 1);
+        }
+
+        function goPrev() {
+            goTo(currentIndex - 1);
+        }
+
+        if (prevControl) {
+            prevControl.addEventListener('click', (e) => {
+                e.preventDefault();
+                goPrev();
+            });
+        }
+
+        if (nextControl) {
+            nextControl.addEventListener('click', (e) => {
+                e.preventDefault();
+                goNext();
+            });
+        }
+
+        updateClasses();
+    }
+
+    // Gestion de la navigation fluide au clic
+    const navLinks = document.querySelectorAll('.nav-bar a');
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = link.getAttribute('href');
+
+            const targetSection = document.querySelector(targetId);
+
+            if (targetSection) {
+                // Méthode standard et robuste
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+            }
+        });
+    });
+
+    // Gestion du tooltip pour le numéro de téléphone
     const phoneIcon = document.querySelector('.lucide-phone');
     if (phoneIcon) {
-        const tooltip = document.createElement('div');
-        tooltip.className = 'tooltip';
-        tooltip.textContent = phoneIcon.getAttribute('data-tooltip');
-        document.body.appendChild(tooltip);
+        let tooltip;
 
-        phoneIcon.addEventListener('mouseover', function(event) {
+        phoneIcon.addEventListener('mouseenter', () => {
+            const phoneNumber = phoneIcon.getAttribute('data-tooltip');
+            tooltip = document.createElement('div');
+            tooltip.classList.add('tooltip');
+            tooltip.textContent = phoneNumber;
+            document.body.appendChild(tooltip);
+
             const rect = phoneIcon.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 10}px`;
+            tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+            tooltip.style.top = `${rect.top - tooltip.offsetHeight - 10}px`;
             tooltip.style.visibility = 'visible';
             tooltip.style.opacity = '1';
         });
 
-        phoneIcon.addEventListener('mouseout', function() {
-            tooltip.style.visibility = 'hidden';
-            tooltip.style.opacity = '0';
+        phoneIcon.addEventListener('mouseleave', () => {
+            if (tooltip) {
+                tooltip.style.opacity = '0';
+                tooltip.style.visibility = 'hidden';
+                tooltip.remove();
+                tooltip = null;
+            }
         });
     }
 });
 
-
-
-document.addEventListener('DOMContentLoaded', function() {
-    typeEffect();
-});
-
-// Initialisation des carrousels
-document.addEventListener('DOMContentLoaded', function() {
-    // Premier carousel
-    initCarousel('.carousel-inner', '.carousel-item', '.carousel-control-prev', '.carousel-control-next');
-    
-    // Deuxième carousel
-    initCarousel('.carousel-inner2', '.carousel-item2', '.carousel-control-prev2', '.carousel-control-next2');
-    
-    // Applique l'effet de zoom au clic sur toutes les images du deuxième carrousel
-    document.querySelectorAll('.carousel-item2 img').forEach(img => {
-        img.addEventListener('click', function() {
-            this.classList.toggle('zoomed');
-        });
-    });
-});
-
-// Fonction réutilisable pour initialiser un carrousel
-function initCarousel(innerSelector, itemSelector, prevSelector, nextSelector) {
-    const carouselInner = document.querySelector(innerSelector);
-    if (!carouselInner) return;
-    
-    const carouselItems = document.querySelectorAll(itemSelector);
-    const prevButton = document.querySelector(prevSelector);
-    const nextButton = document.querySelector(nextSelector);
-    let currentIndex = 0;
-    
-    // Clone les éléments du carrousel pour un défilement infini
-    const originalContent = carouselInner.innerHTML;
-    carouselInner.innerHTML += originalContent;
-    
-    function updateCarousel() {
-        const offset = -currentIndex * 100;
-        carouselInner.style.transition = 'transform 0.5s ease';
-        carouselInner.style.transform = `translateX(${offset}%)`;
-        
-        // Gestion de la boucle infinie
-        if (currentIndex >= carouselItems.length) {
-            setTimeout(() => {
-                carouselInner.style.transition = 'none';
-                currentIndex = 0;
-                carouselInner.style.transform = `translateX(0%)`;
-                
-                // Réactive la transition après avoir sauté
-                setTimeout(() => {
-                    carouselInner.style.transition = 'transform 0.5s ease';
-                }, 50);
-            }, 500);
-        } else if (currentIndex < 0) {
-            setTimeout(() => {
-                carouselInner.style.transition = 'none';
-                currentIndex = carouselItems.length - 1;
-                const newOffset = -currentIndex * 100;
-                carouselInner.style.transform = `translateX(${newOffset}%)`;
-                
-                // Réactive la transition après avoir sauté
-                setTimeout(() => {
-                    carouselInner.style.transition = 'transform 0.5s ease';
-                }, 50);
-            }, 500);
-        }
-        
-        // Met à jour les classes des éléments
-        document.querySelectorAll(itemSelector).forEach((item, index) => {
-            const adjustedIndex = index % carouselItems.length;
-            const isActive = adjustedIndex === currentIndex % carouselItems.length;
-            const isPrev = adjustedIndex === (currentIndex - 1 + carouselItems.length) % carouselItems.length;
-            const isNext = adjustedIndex === (currentIndex + 1) % carouselItems.length;
-            
-            item.classList.remove('active', 'prev', 'next');
-            if (isActive) item.classList.add('active');
-            if (isPrev) item.classList.add('prev');
-            if (isNext) item.classList.add('next');
-        });
-    }
-    
-    if (prevButton) {
-        prevButton.addEventListener('click', function(event) {
-            event.preventDefault();
-            currentIndex--;
-            updateCarousel();
-        });
-    }
-    
-    if (nextButton) {
-        nextButton.addEventListener('click', function(event) {
-            event.preventDefault();
-            currentIndex++;
-            updateCarousel();
-        });
-    }
-    
-    // Initialisation de l'état actif
-    updateCarousel();
-}
