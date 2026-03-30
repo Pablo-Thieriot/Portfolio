@@ -99,7 +99,7 @@ body {
 }
 
 .nav-bar a {
-    color: rgb(255, 255, 255);
+    color: rgb(0, 0, 0);
     text-decoration: none;
     font-size: 1.3rem;
     /* Increased font size */
@@ -470,7 +470,7 @@ body {
 
 .game-content h2 {
     font-size: 2.2rem;
-    color: white;
+    color: rgb(0, 0, 0);
     margin: 0 0 0.5rem 0;
     border-bottom: 2px solid #6aabcb;
     padding-bottom: 5px;
@@ -526,12 +526,13 @@ body {
     margin-bottom: 0.2rem;
 }
 
+
 .game-details .game-link {
     margin-top: 0.2rem;
 }
 
 .game-details .game-link a {
-    color: #ffffff;
+    color: #000000;
     text-decoration: none;
     font-weight: bold;
     font-size: 1.1rem;
@@ -579,7 +580,7 @@ body {
 
 .info-box p {
     font-size: 0.85rem;
-    color: #fff;
+    color: #000000;
     margin: 0;
     font-weight: 500;
 }
