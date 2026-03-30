@@ -15,6 +15,16 @@
     color: black;
 }
 
+:root {
+    --bg1: hsl(197, 56%, 64%);
+    --bg2: hsl(215, 62%, 72%);
+}
+
+.linkBlack{
+    text-decoration: none;
+    color: #000000;
+}
+
 body {
     font-family: 'Redaction', sans-serif;
     overflow: hidden;
@@ -23,7 +33,10 @@ body {
     width: 100vw;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(to bottom, #185d6b, #a3bfc6);
+    --bg1: hsl(197, 56%, 64%);
+    --bg2: hsl(215, 62%, 72%);
+    background: linear-gradient(to bottom, var(--bg1), var(--bg2));
+    transition: background 0.4s ease;
     letter-spacing: 0.05rem;
     /* Reduced letter spacing */
 }
@@ -31,10 +44,12 @@ body {
 .container {
     display: flex;
     /*AJOUTE 100 POUR CHAQUE NOUVELLE SECTION*/
-    width: 500vw;
+    width: 100vw;
     height: 100vh;
-    overflow: hidden;
-    /* No scrollbars */
+    overflow-x: auto;
+    overflow-y: hidden;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 .section {
@@ -53,6 +68,12 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.linkBlack{
+    text-decoration: none;
+    color: #000000;
+    font-weight: bold;
 }
 
 .nav-bar {
@@ -446,6 +467,8 @@ body {
     border-radius: 4px;
 }
 
+
+
 .game-details .game-link a:hover {
     color: #fff;
     background-color: rgba(106, 171, 203, 0.2);
@@ -537,11 +560,13 @@ body {
     /* empêche le dépassement */
 }
 
-.container {
-    overflow-x: scroll;
-    /* autorise le scroll horizontal normal */
+game-name{
+
 }
 
+.container::-webkit-scrollbar {
+    display: none;
+}
 
 .game-carousel .carousel-item img {
     max-width: 70%;

@@ -1,31 +1,24 @@
 // Gestion du défilement horizontal
-let scrollAmount = 0;
-let isScrolling = false;
+let scrollContainer = null;
 
-document.addEventListener('wheel', function (event) {
+// Paramètres du dégradé arc-en-ciel
+const rainbowConfig = {
+    baseHue: 110,
+    hueRange: 180,
+    saturation: 80,
+    lightnessStart: 62,
+    lightnessEnd: 72,
+};
+
+function handleWheel(event) {
+    if (!scrollContainer) return;
     event.preventDefault();
-    if (event.deltaY !== 0) {
-        scrollAmount += event.deltaY;
-        if (!isScrolling) {
-            isScrolling = true;
-            smoothHorizontalScroll();
-        }
-    }
-}, { passive: false });
+    event.stopPropagation();
 
-function smoothHorizontalScroll() {
-    if (Math.abs(scrollAmount) > 0.5) {
-        window.scrollBy({
-            top: 0,
-            left: scrollAmount / 10,
-            behavior: 'auto'
-        });
-        scrollAmount *= 0.9;
-        requestAnimationFrame(smoothHorizontalScroll);
-    } else {
-        scrollAmount = 0;
-        isScrolling = false;
-    }
+    const delta = event.deltaY;
+    const maxScrollLeft = scrollContainer.scrollWidth - scrollContainer.clientWidth;
+    scrollContainer.scrollLeft = Math.max(0, Math.min(scrollContainer.scrollLeft + delta, maxScrollLeft));
+    updateRainbowBackground();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -164,6 +157,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    scrollContainer = document.querySelector('.container');
+    if (scrollContainer) {
+        scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
+        scrollContainer.addEventListener('scroll', updateRainbowBackground, { passive: true });
+        updateRainbowBackground();
+    }
+
+    function updateRainbowBackground() {
+        if (!scrollContainer) return;
+        const maxScrollLeft = scrollContainer.scrollWidth - scrollContainer.clientWidth;
+        const progress = maxScrollLeft > 0 ? scrollContainer.scrollLeft / maxScrollLeft : 0;
+        const hueStart = rainbowConfig.baseHue + progress * rainbowConfig.hueRange;
+        const hueEnd = hueStart + 45;
+
+        const color1 = `hsl(${Math.round(hueStart)}, ${rainbowConfig.saturation}%, ${rainbowConfig.lightnessStart}%)`;
+        const color2 = `hsl(${Math.round(hueEnd)}, ${rainbowConfig.saturation}%, ${rainbowConfig.lightnessEnd}%)`;
+
+        document.documentElement.style.setProperty('--bg1', color1);
+        document.documentElement.style.setProperty('--bg2', color2);
+        document.body.style.background = `linear-gradient(to bottom, ${color1}, ${color2})`;
+    }
 
     // Gestion du tooltip pour le numéro de téléphone
     const phoneIcon = document.querySelector('.lucide-phone');
